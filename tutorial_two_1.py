@@ -2,10 +2,11 @@
 ##################################################
 # Gnuradio Python Flow Graph
 # Title: Tutorial Two 1
-# Generated: Thu Mar 12 09:45:19 2015
+# Generated: Mon Mar 16 10:54:14 2015
 ##################################################
 
 from PyQt4 import Qt
+from PyQt4.QtCore import QObject, pyqtSlot
 from gnuradio import analog
 from gnuradio import audio
 from gnuradio import blocks
@@ -16,6 +17,7 @@ from gnuradio.eng_option import eng_option
 from gnuradio.filter import firdes
 from grc_gnuradio import blks2 as grc_blks2
 from optparse import OptionParser
+import PyQt4.Qwt5 as Qwt
 import sip
 import sys
 
@@ -49,20 +51,13 @@ class tutorial_two_1(gr.top_block, Qt.QWidget):
         ##################################################
         # Variables
         ##################################################
-        self.variable_qtgui_check_box_0 = variable_qtgui_check_box_0 = 1
         self.samp_rate = samp_rate = 32000
+        self.radio = radio = 0
         self.frequency = frequency = 1000
 
         ##################################################
         # Blocks
         ##################################################
-        _variable_qtgui_check_box_0_check_box = Qt.QCheckBox("Use a cosinus signal / Use a .wav source")
-        self._variable_qtgui_check_box_0_choices = {True: 1, False: 0}
-        self._variable_qtgui_check_box_0_choices_inv = dict((v,k) for k,v in self._variable_qtgui_check_box_0_choices.iteritems())
-        self._variable_qtgui_check_box_0_callback = lambda i: Qt.QMetaObject.invokeMethod(_variable_qtgui_check_box_0_check_box, "setChecked", Qt.Q_ARG("bool", self._variable_qtgui_check_box_0_choices_inv[i]))
-        self._variable_qtgui_check_box_0_callback(self.variable_qtgui_check_box_0)
-        _variable_qtgui_check_box_0_check_box.stateChanged.connect(lambda i: self.set_variable_qtgui_check_box_0(self._variable_qtgui_check_box_0_choices[bool(i)]))
-        self.top_layout.addWidget(_variable_qtgui_check_box_0_check_box)
         self.tabQT = Qt.QTabWidget()
         self.tabQT_widget_0 = Qt.QWidget()
         self.tabQT_layout_0 = Qt.QBoxLayout(Qt.QBoxLayout.TopToBottom, self.tabQT_widget_0)
@@ -75,6 +70,50 @@ class tutorial_two_1(gr.top_block, Qt.QWidget):
         self.tabQT_layout_1.addLayout(self.tabQT_grid_layout_1)
         self.tabQT.addTab(self.tabQT_widget_1, "Frequency")
         self.top_layout.addWidget(self.tabQT)
+        self._radio_options = (0, 1, 2, 3, 4, )
+        self._radio_labels = ("Cosinus signal", "Jungle", "Breathe", "Desert", "Battle", )
+        self._radio_group_box = Qt.QGroupBox("radio")
+        self._radio_box = Qt.QHBoxLayout()
+        class variable_chooser_button_group(Qt.QButtonGroup):
+            def __init__(self, parent=None):
+                Qt.QButtonGroup.__init__(self, parent)
+            @pyqtSlot(int)
+            def updateButtonChecked(self, button_id):
+                self.button(button_id).setChecked(True)
+        self._radio_button_group = variable_chooser_button_group()
+        self._radio_group_box.setLayout(self._radio_box)
+        for i, label in enumerate(self._radio_labels):
+        	radio_button = Qt.QRadioButton(label)
+        	self._radio_box.addWidget(radio_button)
+        	self._radio_button_group.addButton(radio_button, i)
+        self._radio_callback = lambda i: Qt.QMetaObject.invokeMethod(self._radio_button_group, "updateButtonChecked", Qt.Q_ARG("int", self._radio_options.index(i)))
+        self._radio_callback(self.radio)
+        self._radio_button_group.buttonClicked[int].connect(
+        	lambda i: self.set_radio(self._radio_options[i]))
+        self.top_layout.addWidget(self._radio_group_box)
+        self._frequency_layout = Qt.QVBoxLayout()
+        self._frequency_tool_bar = Qt.QToolBar(self)
+        self._frequency_layout.addWidget(self._frequency_tool_bar)
+        self._frequency_tool_bar.addWidget(Qt.QLabel("frequency"+": "))
+        class qwt_counter_pyslot(Qwt.QwtCounter):
+            def __init__(self, parent=None):
+                Qwt.QwtCounter.__init__(self, parent)
+            @pyqtSlot('double')
+            def setValue(self, value):
+                super(Qwt.QwtCounter, self).setValue(value)
+        self._frequency_counter = qwt_counter_pyslot()
+        self._frequency_counter.setRange(20, 20000, 100)
+        self._frequency_counter.setNumButtons(2)
+        self._frequency_counter.setValue(self.frequency)
+        self._frequency_tool_bar.addWidget(self._frequency_counter)
+        self._frequency_counter.valueChanged.connect(self.set_frequency)
+        self._frequency_slider = Qwt.QwtSlider(None, Qt.Qt.Horizontal, Qwt.QwtSlider.BottomScale, Qwt.QwtSlider.BgSlot)
+        self._frequency_slider.setRange(20, 20000, 100)
+        self._frequency_slider.setValue(self.frequency)
+        self._frequency_slider.setMinimumWidth(200)
+        self._frequency_slider.valueChanged.connect(self.set_frequency)
+        self._frequency_layout.addWidget(self._frequency_slider)
+        self.top_layout.addLayout(self._frequency_layout)
         self.qtgui_time_sink_x_0 = qtgui.time_sink_f(
         	1024, #size
         	samp_rate, #samp_rate
@@ -150,13 +189,16 @@ class tutorial_two_1(gr.top_block, Qt.QWidget):
         
         self._qtgui_freq_sink_x_0_win = sip.wrapinstance(self.qtgui_freq_sink_x_0.pyqwidget(), Qt.QWidget)
         self.tabQT_layout_1.addWidget(self._qtgui_freq_sink_x_0_win)
+        self.blocks_wavfile_source_3 = blocks.wavfile_source("/home/raph/projet/desert.wav", True)
+        self.blocks_wavfile_source_2 = blocks.wavfile_source("/home/raph/projet/seabattle_loop.wav", True)
+        self.blocks_wavfile_source_1 = blocks.wavfile_source("/home/raph/projet/BreathingInMask.wav", True)
         self.blocks_wavfile_source_0 = blocks.wavfile_source("/home/raph/projet/jungle.wav", True)
         self.blocks_throttle_0 = blocks.throttle(gr.sizeof_float*1, samp_rate,True)
         self.blks2_selector_0 = grc_blks2.selector(
         	item_size=gr.sizeof_float*1,
-        	num_inputs=2,
+        	num_inputs=5,
         	num_outputs=1,
-        	input_index=variable_qtgui_check_box_0,
+        	input_index=radio,
         	output_index=0,
         )
         self.audio_sink_0 = audio.sink(samp_rate, "", True)
@@ -168,9 +210,12 @@ class tutorial_two_1(gr.top_block, Qt.QWidget):
         self.connect((self.blocks_throttle_0, 0), (self.qtgui_time_sink_x_0, 0))
         self.connect((self.blocks_throttle_0, 0), (self.audio_sink_0, 0))
         self.connect((self.blocks_throttle_0, 0), (self.qtgui_freq_sink_x_0, 0))
-        self.connect((self.blocks_wavfile_source_0, 0), (self.blks2_selector_0, 0))
-        self.connect((self.analog_sig_source_x_0, 0), (self.blks2_selector_0, 1))
         self.connect((self.blks2_selector_0, 0), (self.blocks_throttle_0, 0))
+        self.connect((self.blocks_wavfile_source_1, 0), (self.blks2_selector_0, 2))
+        self.connect((self.blocks_wavfile_source_3, 0), (self.blks2_selector_0, 3))
+        self.connect((self.blocks_wavfile_source_2, 0), (self.blks2_selector_0, 4))
+        self.connect((self.blocks_wavfile_source_0, 0), (self.blks2_selector_0, 1))
+        self.connect((self.analog_sig_source_x_0, 0), (self.blks2_selector_0, 0))
 
 
     def closeEvent(self, event):
@@ -178,23 +223,23 @@ class tutorial_two_1(gr.top_block, Qt.QWidget):
         self.settings.setValue("geometry", self.saveGeometry())
         event.accept()
 
-    def get_variable_qtgui_check_box_0(self):
-        return self.variable_qtgui_check_box_0
-
-    def set_variable_qtgui_check_box_0(self, variable_qtgui_check_box_0):
-        self.variable_qtgui_check_box_0 = variable_qtgui_check_box_0
-        self.blks2_selector_0.set_input_index(int(self.variable_qtgui_check_box_0))
-        self._variable_qtgui_check_box_0_callback(self.variable_qtgui_check_box_0)
-
     def get_samp_rate(self):
         return self.samp_rate
 
     def set_samp_rate(self, samp_rate):
         self.samp_rate = samp_rate
-        self.analog_sig_source_x_0.set_sampling_freq(self.samp_rate)
-        self.blocks_throttle_0.set_sample_rate(self.samp_rate)
         self.qtgui_freq_sink_x_0.set_frequency_range(0, self.samp_rate)
         self.qtgui_time_sink_x_0.set_samp_rate(self.samp_rate)
+        self.analog_sig_source_x_0.set_sampling_freq(self.samp_rate)
+        self.blocks_throttle_0.set_sample_rate(self.samp_rate)
+
+    def get_radio(self):
+        return self.radio
+
+    def set_radio(self, radio):
+        self.radio = radio
+        self.blks2_selector_0.set_input_index(int(self.radio))
+        self._radio_callback(self.radio)
 
     def get_frequency(self):
         return self.frequency
@@ -202,6 +247,8 @@ class tutorial_two_1(gr.top_block, Qt.QWidget):
     def set_frequency(self, frequency):
         self.frequency = frequency
         self.analog_sig_source_x_0.set_frequency(self.frequency)
+        Qt.QMetaObject.invokeMethod(self._frequency_counter, "setValue", Qt.Q_ARG("double", self.frequency))
+        Qt.QMetaObject.invokeMethod(self._frequency_slider, "setValue", Qt.Q_ARG("double", self.frequency))
 
 if __name__ == '__main__':
     import ctypes
