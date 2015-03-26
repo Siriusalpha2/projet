@@ -2,7 +2,7 @@
 ##################################################
 # Gnuradio Python Flow Graph
 # Title: Extraction du RDS
-# Generated: Thu Mar 26 11:04:43 2015
+# Generated: Thu Mar 26 14:54:32 2015
 ##################################################
 
 from gnuradio import analog
@@ -97,10 +97,10 @@ class ExtractionRDS(grc_wxgui.top_block_gui):
         self.wxgui_waterfallsink2_0 = waterfallsink2.waterfall_sink_f(
         	self.tab.GetPage(2).GetWin(),
         	baseband_freq=0,
-        	dynamic_range=100,
-        	ref_level=0,
+        	dynamic_range=60,
+        	ref_level=-45,
         	ref_scale=2.0,
-        	sample_rate=17e3,
+        	sample_rate=170e3,
         	fft_size=512,
         	fft_rate=15,
         	average=False,
@@ -108,10 +108,10 @@ class ExtractionRDS(grc_wxgui.top_block_gui):
         	title="Waterfall Plot",
         )
         self.tab.GetPage(2).Add(self.wxgui_waterfallsink2_0.win)
-        self.wxgui_scopesink2_0 = scopesink2.scope_sink_f(
+        self.wxgui_scopesink2_2 = scopesink2.scope_sink_f(
         	self.tab.GetPage(0).GetWin(),
         	title="Scope Plot",
-        	sample_rate=17.5e3,
+        	sample_rate=1.1875e3,
         	v_scale=0,
         	v_offset=0,
         	t_scale=0,
@@ -121,7 +121,7 @@ class ExtractionRDS(grc_wxgui.top_block_gui):
         	trig_mode=wxgui.TRIG_MODE_AUTO,
         	y_axis_label="Counts",
         )
-        self.tab.GetPage(0).Add(self.wxgui_scopesink2_0.win)
+        self.tab.GetPage(0).Add(self.wxgui_scopesink2_2.win)
         self.rtlsdr_source_0 = osmosdr.source( args="numchan=" + str(1) + " " + "" )
         self.rtlsdr_source_0.set_sample_rate(samp_rate)
         self.rtlsdr_source_0.set_center_freq(frequency*1e6, 0)
@@ -135,24 +135,69 @@ class ExtractionRDS(grc_wxgui.top_block_gui):
         self.rtlsdr_source_0.set_antenna("", 0)
         self.rtlsdr_source_0.set_bandwidth(0, 0)
           
+        self.rational_resampler_xxx_3 = filter.rational_resampler_fff(
+                interpolation=int(1.1875e3),
+                decimation=int(500e3),
+                taps=None,
+                fractional_bw=None,
+        )
+        self.rational_resampler_xxx_2 = filter.rational_resampler_fff(
+                interpolation=int(170e3),
+                decimation=int(quadrature),
+                taps=None,
+                fractional_bw=None,
+        )
+        self.rational_resampler_xxx_1 = filter.rational_resampler_fff(
+                interpolation=1,
+                decimation=int(quadrature/(48e3)),
+                taps=None,
+                fractional_bw=None,
+        )
+        self.rational_resampler_xxx_0 = filter.rational_resampler_ccc(
+                interpolation=1,
+                decimation=2,
+                taps=None,
+                fractional_bw=None,
+        )
+        self.low_pass_filter_2 = filter.fir_filter_fff(1, firdes.low_pass(
+        	1, quadrature, 2.2e3, 2e3, firdes.WIN_HAMMING, 6.76))
         self.low_pass_filter_0 = filter.fir_filter_ccf(1, firdes.low_pass(
         	1, samp_rate, cutoff, transition, firdes.WIN_HAMMING, 6.76))
+        self.blocks_multiply_xx_1 = blocks.multiply_vff(1)
         self.blocks_multiply_const_vxx_0 = blocks.multiply_const_vff((volume, ))
+        self.blocks_file_sink_0 = blocks.file_sink(gr.sizeof_float*1, "/root/Projet/projet/data", False)
+        self.blocks_file_sink_0.set_unbuffered(False)
+        self.band_pass_filter_3 = filter.fir_filter_fff(1, firdes.band_pass(
+        	1, quadrature, 18.5e3, 19.5e3, 1e3, firdes.WIN_HAMMING, 6.76))
+        self.band_pass_filter_2 = filter.fir_filter_fff(1, firdes.band_pass(
+        	1, quadrature, 54e3, 60e3, 3e3, firdes.WIN_HAMMING, 6.76))
         self.audio_sink_0 = audio.sink(48000, "", True)
         self.analog_wfm_rcv_0 = analog.wfm_rcv(
         	quad_rate=quadrature,
-        	audio_decimation=10,
+        	audio_decimation=1,
         )
 
         ##################################################
         # Connections
         ##################################################
         self.connect((self.blocks_multiply_const_vxx_0, 0), (self.audio_sink_0, 0))
-        self.connect((self.blocks_multiply_const_vxx_0, 0), (self.wxgui_scopesink2_0, 0))
-        self.connect((self.analog_wfm_rcv_0, 0), (self.wxgui_waterfallsink2_0, 0))
         self.connect((self.rtlsdr_source_0, 0), (self.low_pass_filter_0, 0))
-        self.connect((self.analog_wfm_rcv_0, 0), (self.blocks_multiply_const_vxx_0, 0))
-        self.connect((self.low_pass_filter_0, 0), (self.analog_wfm_rcv_0, 0))
+        self.connect((self.low_pass_filter_0, 0), (self.rational_resampler_xxx_0, 0))
+        self.connect((self.rational_resampler_xxx_0, 0), (self.analog_wfm_rcv_0, 0))
+        self.connect((self.analog_wfm_rcv_0, 0), (self.rational_resampler_xxx_1, 0))
+        self.connect((self.rational_resampler_xxx_1, 0), (self.blocks_multiply_const_vxx_0, 0))
+        self.connect((self.analog_wfm_rcv_0, 0), (self.rational_resampler_xxx_2, 0))
+        self.connect((self.rational_resampler_xxx_2, 0), (self.wxgui_waterfallsink2_0, 0))
+        self.connect((self.analog_wfm_rcv_0, 0), (self.band_pass_filter_2, 0))
+        self.connect((self.analog_wfm_rcv_0, 0), (self.band_pass_filter_3, 0))
+        self.connect((self.band_pass_filter_2, 0), (self.blocks_multiply_xx_1, 0))
+        self.connect((self.band_pass_filter_2, 0), (self.blocks_multiply_xx_1, 1))
+        self.connect((self.band_pass_filter_2, 0), (self.blocks_multiply_xx_1, 2))
+        self.connect((self.band_pass_filter_3, 0), (self.blocks_multiply_xx_1, 3))
+        self.connect((self.blocks_multiply_xx_1, 0), (self.low_pass_filter_2, 0))
+        self.connect((self.low_pass_filter_2, 0), (self.rational_resampler_xxx_3, 0))
+        self.connect((self.rational_resampler_xxx_3, 0), (self.wxgui_scopesink2_2, 0))
+        self.connect((self.rational_resampler_xxx_3, 0), (self.blocks_file_sink_0, 0))
 
 
 
@@ -185,6 +230,9 @@ class ExtractionRDS(grc_wxgui.top_block_gui):
 
     def set_quadrature(self, quadrature):
         self.quadrature = quadrature
+        self.band_pass_filter_2.set_taps(firdes.band_pass(1, self.quadrature, 54e3, 60e3, 3e3, firdes.WIN_HAMMING, 6.76))
+        self.band_pass_filter_3.set_taps(firdes.band_pass(1, self.quadrature, 18.5e3, 19.5e3, 1e3, firdes.WIN_HAMMING, 6.76))
+        self.low_pass_filter_2.set_taps(firdes.low_pass(1, self.quadrature, 2.2e3, 2e3, firdes.WIN_HAMMING, 6.76))
 
     def get_frequency(self):
         return self.frequency
