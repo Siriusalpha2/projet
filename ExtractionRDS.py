@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 ##################################################
 # Gnuradio Python Flow Graph
-# Title: Demodfm
-# Generated: Thu Mar 26 10:39:12 2015
+# Title: Extraction du RDS
+# Generated: Thu Mar 26 11:04:43 2015
 ##################################################
 
 from gnuradio import analog
@@ -13,18 +13,20 @@ from gnuradio import filter
 from gnuradio import gr
 from gnuradio import wxgui
 from gnuradio.eng_option import eng_option
+from gnuradio.fft import window
 from gnuradio.filter import firdes
 from gnuradio.wxgui import forms
 from gnuradio.wxgui import scopesink2
+from gnuradio.wxgui import waterfallsink2
 from grc_gnuradio import wxgui as grc_wxgui
 from optparse import OptionParser
 import osmosdr
 import wx
 
-class DEMODFM(grc_wxgui.top_block_gui):
+class ExtractionRDS(grc_wxgui.top_block_gui):
 
     def __init__(self):
-        grc_wxgui.top_block_gui.__init__(self, title="Demodfm")
+        grc_wxgui.top_block_gui.__init__(self, title="Extraction du RDS")
         _icon_path = "/usr/share/icons/hicolor/32x32/apps/gnuradio-grc.png"
         self.SetIcon(wx.Icon(_icon_path, wx.BITMAP_TYPE_ANY))
 
@@ -32,7 +34,7 @@ class DEMODFM(grc_wxgui.top_block_gui):
         # Variables
         ##################################################
         self.volume = volume = 8
-        self.transition = transition = 150e3
+        self.transition = transition = 25e3
         self.samp_rate = samp_rate = 1e6
         self.quadrature = quadrature = 500e3
         self.frequency = frequency = 96.6
@@ -92,7 +94,21 @@ class DEMODFM(grc_wxgui.top_block_gui):
         	proportion=1,
         )
         self.Add(_frequency_sizer)
-        self.wxgui_scopesink2_1 = scopesink2.scope_sink_f(
+        self.wxgui_waterfallsink2_0 = waterfallsink2.waterfall_sink_f(
+        	self.tab.GetPage(2).GetWin(),
+        	baseband_freq=0,
+        	dynamic_range=100,
+        	ref_level=0,
+        	ref_scale=2.0,
+        	sample_rate=17e3,
+        	fft_size=512,
+        	fft_rate=15,
+        	average=False,
+        	avg_alpha=None,
+        	title="Waterfall Plot",
+        )
+        self.tab.GetPage(2).Add(self.wxgui_waterfallsink2_0.win)
+        self.wxgui_scopesink2_0 = scopesink2.scope_sink_f(
         	self.tab.GetPage(0).GetWin(),
         	title="Scope Plot",
         	sample_rate=17.5e3,
@@ -105,7 +121,7 @@ class DEMODFM(grc_wxgui.top_block_gui):
         	trig_mode=wxgui.TRIG_MODE_AUTO,
         	y_axis_label="Counts",
         )
-        self.tab.GetPage(0).Add(self.wxgui_scopesink2_1.win)
+        self.tab.GetPage(0).Add(self.wxgui_scopesink2_0.win)
         self.rtlsdr_source_0 = osmosdr.source( args="numchan=" + str(1) + " " + "" )
         self.rtlsdr_source_0.set_sample_rate(samp_rate)
         self.rtlsdr_source_0.set_center_freq(frequency*1e6, 0)
@@ -119,34 +135,9 @@ class DEMODFM(grc_wxgui.top_block_gui):
         self.rtlsdr_source_0.set_antenna("", 0)
         self.rtlsdr_source_0.set_bandwidth(0, 0)
           
-        self.rational_resampler_xxx_2 = filter.rational_resampler_fff(
-                interpolation=1,
-                decimation=1,
-                taps=None,
-                fractional_bw=None,
-        )
-        self.rational_resampler_xxx_1 = filter.rational_resampler_fff(
-                interpolation=48,
-                decimation=50,
-                taps=None,
-                fractional_bw=None,
-        )
-        self.rational_resampler_xxx_0 = filter.rational_resampler_ccc(
-                interpolation=1,
-                decimation=int(samp_rate/quadrature),
-                taps=None,
-                fractional_bw=None,
-        )
-        self.low_pass_filter_1 = filter.fir_filter_fff(1, firdes.low_pass(
-        	1, quadrature, 2.2e3, 2e3, firdes.WIN_HAMMING, 6.76))
         self.low_pass_filter_0 = filter.fir_filter_ccf(1, firdes.low_pass(
         	1, samp_rate, cutoff, transition, firdes.WIN_HAMMING, 6.76))
-        self.blocks_multiply_xx_0 = blocks.multiply_vff(1)
         self.blocks_multiply_const_vxx_0 = blocks.multiply_const_vff((volume, ))
-        self.band_pass_filter_1 = filter.fir_filter_fff(1, firdes.band_pass(
-        	1, quadrature, 18.5e3, 19.5e3, 1e3, firdes.WIN_HAMMING, 6.76))
-        self.band_pass_filter_0 = filter.fir_filter_fff(1, firdes.band_pass(
-        	1, quadrature, 54e3, 60e3, 3e3, firdes.WIN_HAMMING, 6.76))
         self.audio_sink_0 = audio.sink(48000, "", True)
         self.analog_wfm_rcv_0 = analog.wfm_rcv(
         	quad_rate=quadrature,
@@ -156,21 +147,12 @@ class DEMODFM(grc_wxgui.top_block_gui):
         ##################################################
         # Connections
         ##################################################
-        self.connect((self.low_pass_filter_0, 0), (self.analog_wfm_rcv_0, 0))
-        self.connect((self.rtlsdr_source_0, 0), (self.rational_resampler_xxx_0, 0))
-        self.connect((self.rational_resampler_xxx_0, 0), (self.low_pass_filter_0, 0))
-        self.connect((self.analog_wfm_rcv_0, 0), (self.rational_resampler_xxx_1, 0))
         self.connect((self.blocks_multiply_const_vxx_0, 0), (self.audio_sink_0, 0))
-        self.connect((self.rational_resampler_xxx_1, 0), (self.blocks_multiply_const_vxx_0, 0))
-        self.connect((self.analog_wfm_rcv_0, 0), (self.band_pass_filter_0, 0))
-        self.connect((self.analog_wfm_rcv_0, 0), (self.band_pass_filter_1, 0))
-        self.connect((self.band_pass_filter_0, 0), (self.blocks_multiply_xx_0, 0))
-        self.connect((self.band_pass_filter_0, 0), (self.blocks_multiply_xx_0, 1))
-        self.connect((self.band_pass_filter_0, 0), (self.blocks_multiply_xx_0, 2))
-        self.connect((self.band_pass_filter_1, 0), (self.blocks_multiply_xx_0, 3))
-        self.connect((self.blocks_multiply_xx_0, 0), (self.low_pass_filter_1, 0))
-        self.connect((self.low_pass_filter_1, 0), (self.rational_resampler_xxx_2, 0))
-        self.connect((self.rational_resampler_xxx_2, 0), (self.wxgui_scopesink2_1, 0))
+        self.connect((self.blocks_multiply_const_vxx_0, 0), (self.wxgui_scopesink2_0, 0))
+        self.connect((self.analog_wfm_rcv_0, 0), (self.wxgui_waterfallsink2_0, 0))
+        self.connect((self.rtlsdr_source_0, 0), (self.low_pass_filter_0, 0))
+        self.connect((self.analog_wfm_rcv_0, 0), (self.blocks_multiply_const_vxx_0, 0))
+        self.connect((self.low_pass_filter_0, 0), (self.analog_wfm_rcv_0, 0))
 
 
 
@@ -195,26 +177,23 @@ class DEMODFM(grc_wxgui.top_block_gui):
 
     def set_samp_rate(self, samp_rate):
         self.samp_rate = samp_rate
-        self.low_pass_filter_0.set_taps(firdes.low_pass(1, self.samp_rate, self.cutoff, self.transition, firdes.WIN_HAMMING, 6.76))
         self.rtlsdr_source_0.set_sample_rate(self.samp_rate)
+        self.low_pass_filter_0.set_taps(firdes.low_pass(1, self.samp_rate, self.cutoff, self.transition, firdes.WIN_HAMMING, 6.76))
 
     def get_quadrature(self):
         return self.quadrature
 
     def set_quadrature(self, quadrature):
         self.quadrature = quadrature
-        self.band_pass_filter_0.set_taps(firdes.band_pass(1, self.quadrature, 54e3, 60e3, 3e3, firdes.WIN_HAMMING, 6.76))
-        self.band_pass_filter_1.set_taps(firdes.band_pass(1, self.quadrature, 18.5e3, 19.5e3, 1e3, firdes.WIN_HAMMING, 6.76))
-        self.low_pass_filter_1.set_taps(firdes.low_pass(1, self.quadrature, 2.2e3, 2e3, firdes.WIN_HAMMING, 6.76))
 
     def get_frequency(self):
         return self.frequency
 
     def set_frequency(self, frequency):
         self.frequency = frequency
-        self.rtlsdr_source_0.set_center_freq(self.frequency*1e6, 0)
         self._frequency_slider.set_value(self.frequency)
         self._frequency_text_box.set_value(self.frequency)
+        self.rtlsdr_source_0.set_center_freq(self.frequency*1e6, 0)
 
     def get_cutoff(self):
         return self.cutoff
@@ -234,6 +213,6 @@ if __name__ == '__main__':
             print "Warning: failed to XInitThreads()"
     parser = OptionParser(option_class=eng_option, usage="%prog: [options]")
     (options, args) = parser.parse_args()
-    tb = DEMODFM()
+    tb = ExtractionRDS()
     tb.Start(True)
     tb.Wait()
