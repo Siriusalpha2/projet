@@ -2,7 +2,7 @@
 ##################################################
 # Gnuradio Python Flow Graph
 # Title: Extraction du RDS
-# Generated: Fri Mar 27 12:29:03 2015
+# Generated: Tue Mar 31 18:08:32 2015
 ##################################################
 
 from gnuradio import analog
@@ -111,7 +111,7 @@ class ExtractionRDS(grc_wxgui.top_block_gui):
         self.wxgui_scopesink2_2 = scopesink2.scope_sink_f(
         	self.tab.GetPage(0).GetWin(),
         	title="Scope Plot",
-        	sample_rate=11.875e3,
+        	sample_rate=4750,
         	v_scale=0,
         	v_offset=0,
         	t_scale=0,
@@ -136,7 +136,7 @@ class ExtractionRDS(grc_wxgui.top_block_gui):
         self.rtlsdr_source_0.set_bandwidth(0, 0)
           
         self.rational_resampler_xxx_3 = filter.rational_resampler_fff(
-                interpolation=int(11.875e3),
+                interpolation=int(4750),
                 decimation=int(500e3),
                 taps=None,
                 fractional_bw=None,
