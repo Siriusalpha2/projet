@@ -58,6 +58,7 @@ int main(void){
 		fclose(fe);
 		return -2;
 	}
+	printf("Float=%d\n",sizeof(float));
 	while((nbR=fread(&sample, sizeof(float), 1, fe))>0){
 		/*
 		high=sample>>4;
