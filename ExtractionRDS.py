@@ -2,7 +2,7 @@
 ##################################################
 # Gnuradio Python Flow Graph
 # Title: Extraction du RDS
-# Generated: Tue Mar 31 18:08:32 2015
+# Generated: Sun Apr  5 09:27:32 2015
 ##################################################
 
 from gnuradio import analog
@@ -148,8 +148,8 @@ class ExtractionRDS(grc_wxgui.top_block_gui):
                 fractional_bw=None,
         )
         self.rational_resampler_xxx_1 = filter.rational_resampler_fff(
-                interpolation=1,
-                decimation=int(quadrature/(48e3)),
+                interpolation=int(48e3),
+                decimation=int(quadrature),
                 taps=None,
                 fractional_bw=None,
         )
@@ -191,13 +191,13 @@ class ExtractionRDS(grc_wxgui.top_block_gui):
         self.connect((self.analog_wfm_rcv_0, 0), (self.band_pass_filter_2, 0))
         self.connect((self.analog_wfm_rcv_0, 0), (self.band_pass_filter_3, 0))
         self.connect((self.band_pass_filter_2, 0), (self.blocks_multiply_xx_1, 0))
-        self.connect((self.band_pass_filter_2, 0), (self.blocks_multiply_xx_1, 1))
-        self.connect((self.band_pass_filter_2, 0), (self.blocks_multiply_xx_1, 2))
         self.connect((self.band_pass_filter_3, 0), (self.blocks_multiply_xx_1, 3))
         self.connect((self.blocks_multiply_xx_1, 0), (self.low_pass_filter_2, 0))
         self.connect((self.rational_resampler_xxx_3, 0), (self.wxgui_scopesink2_2, 0))
         self.connect((self.low_pass_filter_2, 0), (self.rational_resampler_xxx_3, 0))
         self.connect((self.rational_resampler_xxx_3, 0), (self.blocks_file_sink_0, 0))
+        self.connect((self.band_pass_filter_3, 0), (self.blocks_multiply_xx_1, 2))
+        self.connect((self.band_pass_filter_3, 0), (self.blocks_multiply_xx_1, 1))
 
 
 
@@ -231,8 +231,8 @@ class ExtractionRDS(grc_wxgui.top_block_gui):
     def set_quadrature(self, quadrature):
         self.quadrature = quadrature
         self.band_pass_filter_2.set_taps(firdes.band_pass(1, self.quadrature, 54e3, 60e3, 3e3, firdes.WIN_HAMMING, 6.76))
-        self.band_pass_filter_3.set_taps(firdes.band_pass(1, self.quadrature, 18.5e3, 19.5e3, 1e3, firdes.WIN_HAMMING, 6.76))
         self.low_pass_filter_2.set_taps(firdes.low_pass(1, self.quadrature, 2.2e3, 2e3, firdes.WIN_HAMMING, 6.76))
+        self.band_pass_filter_3.set_taps(firdes.band_pass(1, self.quadrature, 18.5e3, 19.5e3, 1e3, firdes.WIN_HAMMING, 6.76))
 
     def get_frequency(self):
         return self.frequency
