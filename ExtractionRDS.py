@@ -2,7 +2,7 @@
 ##################################################
 # Gnuradio Python Flow Graph
 # Title: Extraction du RDS
-# Generated: Thu Apr  9 13:21:15 2015
+# Generated: Thu Apr  9 19:29:52 2015
 ##################################################
 
 from gnuradio import analog
@@ -13,11 +13,9 @@ from gnuradio import filter
 from gnuradio import gr
 from gnuradio import wxgui
 from gnuradio.eng_option import eng_option
-from gnuradio.fft import window
 from gnuradio.filter import firdes
 from gnuradio.wxgui import forms
 from gnuradio.wxgui import scopesink2
-from gnuradio.wxgui import waterfallsink2
 from grc_gnuradio import wxgui as grc_wxgui
 from optparse import OptionParser
 import osmosdr
@@ -119,23 +117,9 @@ class ExtractionRDS(grc_wxgui.top_block_gui):
         	proportion=1,
         )
         self.Add(_echantillon_sizer)
-        self.wxgui_waterfallsink2_0 = waterfallsink2.waterfall_sink_f(
-        	self.tab.GetPage(2).GetWin(),
-        	baseband_freq=0,
-        	dynamic_range=60,
-        	ref_level=-45,
-        	ref_scale=2.0,
-        	sample_rate=50e3,
-        	fft_size=512,
-        	fft_rate=15,
-        	average=False,
-        	avg_alpha=None,
-        	title="Waterfall Plot",
-        )
-        self.tab.GetPage(2).Add(self.wxgui_waterfallsink2_0.win)
         self.wxgui_scopesink2_3 = scopesink2.scope_sink_f(
         	self.tab.GetPage(3).GetWin(),
-        	title="Sous porteuse 57",
+        	title="signal 57kHz",
         	sample_rate=samp_rate,
         	v_scale=0,
         	v_offset=0,
@@ -149,7 +133,7 @@ class ExtractionRDS(grc_wxgui.top_block_gui):
         self.tab.GetPage(3).Add(self.wxgui_scopesink2_3.win)
         self.wxgui_scopesink2_2 = scopesink2.scope_sink_f(
         	self.tab.GetPage(0).GetWin(),
-        	title="RDS",
+        	title="RDS apres filtre passe bas",
         	sample_rate=echantillon*1187.5,
         	v_scale=0,
         	v_offset=0,
@@ -161,20 +145,6 @@ class ExtractionRDS(grc_wxgui.top_block_gui):
         	y_axis_label="Counts",
         )
         self.tab.GetPage(0).Add(self.wxgui_scopesink2_2.win)
-        self.wxgui_scopesink2_1 = scopesink2.scope_sink_f(
-        	self.tab.GetPage(1).GetWin(),
-        	title="19",
-        	sample_rate=quadrature,
-        	v_scale=0,
-        	v_offset=0,
-        	t_scale=0,
-        	ac_couple=False,
-        	xy_mode=False,
-        	num_inputs=1,
-        	trig_mode=wxgui.TRIG_MODE_AUTO,
-        	y_axis_label="Counts",
-        )
-        self.tab.GetPage(1).Add(self.wxgui_scopesink2_1.win)
         self.rtlsdr_source_0 = osmosdr.source( args="numchan=" + str(1) + " " + "" )
         self.rtlsdr_source_0.set_sample_rate(samp_rate)
         self.rtlsdr_source_0.set_center_freq(frequency*1e6, 0)
@@ -188,12 +158,6 @@ class ExtractionRDS(grc_wxgui.top_block_gui):
         self.rtlsdr_source_0.set_antenna("", 0)
         self.rtlsdr_source_0.set_bandwidth(0, 0)
           
-        self.rational_resampler_xxx_2 = filter.rational_resampler_fff(
-                interpolation=int(50e3),
-                decimation=int(quadrature),
-                taps=None,
-                fractional_bw=None,
-        )
         self.rational_resampler_xxx_1 = filter.rational_resampler_fff(
                 interpolation=int(48e3),
                 decimation=int(quadrature),
@@ -223,8 +187,6 @@ class ExtractionRDS(grc_wxgui.top_block_gui):
         self.connect((self.rtlsdr_source_0, 0), (self.low_pass_filter_0, 0))
         self.connect((self.analog_wfm_rcv_0, 0), (self.rational_resampler_xxx_1, 0))
         self.connect((self.rational_resampler_xxx_1, 0), (self.blocks_multiply_const_vxx_0, 0))
-        self.connect((self.analog_wfm_rcv_0, 0), (self.rational_resampler_xxx_2, 0))
-        self.connect((self.rational_resampler_xxx_2, 0), (self.wxgui_waterfallsink2_0, 0))
         self.connect((self.analog_wfm_rcv_0, 0), (self.band_pass_filter_2, 0))
         self.connect((self.analog_wfm_rcv_0, 0), (self.band_pass_filter_3, 0))
         self.connect((self.band_pass_filter_2, 0), (self.blocks_multiply_xx_1, 0))
@@ -234,7 +196,6 @@ class ExtractionRDS(grc_wxgui.top_block_gui):
         self.connect((self.low_pass_filter_0, 0), (self.analog_wfm_rcv_0, 0))
         self.connect((self.band_pass_filter_2, 0), (self.wxgui_scopesink2_3, 0))
         self.connect((self.low_pass_filter_2, 0), (self.wxgui_scopesink2_2, 0))
-        self.connect((self.blocks_multiply_xx_1, 0), (self.wxgui_scopesink2_1, 0))
         self.connect((self.blocks_multiply_xx_1, 0), (self.low_pass_filter_2, 0))
 
 
@@ -271,7 +232,6 @@ class ExtractionRDS(grc_wxgui.top_block_gui):
         self.quadrature = quadrature
         self.band_pass_filter_2.set_taps(firdes.band_pass(1, self.quadrature, 54e3, 60e3, 3e3, firdes.WIN_HAMMING, 6.76))
         self.band_pass_filter_3.set_taps(firdes.band_pass(1, self.quadrature, 18.5e3, 19.5e3, 1000, firdes.WIN_HAMMING, 6.76))
-        self.wxgui_scopesink2_1.set_sample_rate(self.quadrature)
         self.low_pass_filter_2.set_taps(firdes.low_pass(1.1875*self.echantillon, self.quadrature, 2.2e3, 2e3, firdes.WIN_HAMMING, 6.76))
 
     def get_frequency(self):
@@ -288,10 +248,10 @@ class ExtractionRDS(grc_wxgui.top_block_gui):
 
     def set_echantillon(self, echantillon):
         self.echantillon = echantillon
-        self.low_pass_filter_2.set_taps(firdes.low_pass(1.1875*self.echantillon, self.quadrature, 2.2e3, 2e3, firdes.WIN_HAMMING, 6.76))
-        self.wxgui_scopesink2_2.set_sample_rate(self.echantillon*1187.5)
         self._echantillon_slider.set_value(self.echantillon)
         self._echantillon_text_box.set_value(self.echantillon)
+        self.low_pass_filter_2.set_taps(firdes.low_pass(1.1875*self.echantillon, self.quadrature, 2.2e3, 2e3, firdes.WIN_HAMMING, 6.76))
+        self.wxgui_scopesink2_2.set_sample_rate(self.echantillon*1187.5)
 
     def get_cutoff(self):
         return self.cutoff

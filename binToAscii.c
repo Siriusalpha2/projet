@@ -43,7 +43,7 @@ enum groupType{
 
 int main(void){
 	FILE *fe=NULL,*fs=NULL;
-	float sample;
+	uint32_t sample;
 	uint8_t low,high;
 	uint8_t tab[16]={0,0,0,0,0,0,0,1,0,1,1,1,1,1,1,1};
 	int nbR, indent=0;
@@ -58,14 +58,14 @@ int main(void){
 		fclose(fe);
 		return -2;
 	}
-	printf("Float=%d\n",sizeof(float));
-	while((nbR=fread(&sample, sizeof(float), 1, fe))>0){
+	while((nbR=fread(&sample, sizeof(uint32_t), 1, fe))>0){
 		/*
 		high=sample>>4;
 		low=sample<<4;
 		low>>=4;
 		fprintf(fs,"%d%d",tab[high],tab[low]);*/
-		fprintf(fs,"%f\n",sample);
+		high=~sample>>31;
+		fprintf(fs,"%x\t%x\n",sample,high);
 		indent+=1;
 		if(indent%4==0){
 			fprintf(fs, "\n");
