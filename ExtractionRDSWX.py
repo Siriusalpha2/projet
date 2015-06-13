@@ -2,7 +2,7 @@
 ##################################################
 # Gnuradio Python Flow Graph
 # Title: Extraction du RDSWX
-# Generated: Thu May  7 14:46:03 2015
+# Generated: Sat Jun 13 18:40:10 2015
 ##################################################
 
 from gnuradio import analog
@@ -13,9 +13,12 @@ from gnuradio import filter
 from gnuradio import gr
 from gnuradio import wxgui
 from gnuradio.eng_option import eng_option
+from gnuradio.fft import window
 from gnuradio.filter import firdes
+from gnuradio.wxgui import fftsink2
 from gnuradio.wxgui import forms
 from gnuradio.wxgui import scopesink2
+from gnuradio.wxgui import waterfallsink2
 from grc_gnuradio import wxgui as grc_wxgui
 from optparse import OptionParser
 import osmosdr
@@ -88,21 +91,56 @@ class ExtractionRDSWX(grc_wxgui.top_block_gui):
         	proportion=1,
         )
         self.Add(_frequency_sizer)
-        self.wxgui_scopesink2_2 = scopesink2.scope_sink_f(
+        self.wxgui_waterfallsink2_0 = waterfallsink2.waterfall_sink_f(
         	self.GetWin(),
-        	title="RDS apres filtre passe bas",
-        	sample_rate=25e3,
+        	baseband_freq=0,
+        	dynamic_range=45,
+        	ref_level=-40,
+        	ref_scale=2.0,
+        	sample_rate=170e3,
+        	fft_size=512,
+        	fft_rate=15,
+        	average=False,
+        	avg_alpha=None,
+        	title="Waterfall Plot",
+        )
+        self.GridAdd(self.wxgui_waterfallsink2_0.win, 0, 0, 1, 1)
+        self.wxgui_scopesink2_0 = scopesink2.scope_sink_f(
+        	self.GetWin(),
+        	title="Scope Plot",
+        	sample_rate=48e3,
         	v_scale=0,
         	v_offset=0,
-        	t_scale=842.1e-6/4,
+        	t_scale=0,
         	ac_couple=False,
         	xy_mode=False,
         	num_inputs=1,
         	trig_mode=wxgui.TRIG_MODE_AUTO,
         	y_axis_label="Counts",
-        	size=(300,200),
         )
-        self.GridAdd(self.wxgui_scopesink2_2.win, 1, 0, 1, 1)
+        self.GridAdd(self.wxgui_scopesink2_0.win, 1, 1, 1, 1)
+        self.wxgui_fftsink2_0 = fftsink2.fft_sink_f(
+        	self.GetWin(),
+        	baseband_freq=0,
+        	y_per_div=10,
+        	y_divs=10,
+        	ref_level=0,
+        	ref_scale=2.0,
+        	sample_rate=samp_rate,
+        	fft_size=1024,
+        	fft_rate=15,
+        	average=False,
+        	avg_alpha=None,
+        	title="FFT Plot",
+        	peak_hold=False,
+        )
+        self.GridAdd(self.wxgui_fftsink2_0.win, 0, 1, 1, 1)
+        self.tab = self.tab = wx.Notebook(self.GetWin(), style=wx.NB_TOP)
+        self.tab.AddPage(grc_wxgui.Panel(self.tab), "Time")
+        self.tab.AddPage(grc_wxgui.Panel(self.tab), "Frequency")
+        self.tab.AddPage(grc_wxgui.Panel(self.tab), "Waterfall")
+        self.tab.AddPage(grc_wxgui.Panel(self.tab), "pb")
+        self.Add(self.tab)
         self.rtlsdr_source_0 = osmosdr.source( args="numchan=" + str(1) + " " + "" )
         self.rtlsdr_source_0.set_sample_rate(samp_rate)
         self.rtlsdr_source_0.set_center_freq(frequency*1e6, 0)
@@ -116,14 +154,18 @@ class ExtractionRDSWX(grc_wxgui.top_block_gui):
         self.rtlsdr_source_0.set_antenna("", 0)
         self.rtlsdr_source_0.set_bandwidth(0, 0)
           
+        self.rational_resampler_xxx_2 = filter.rational_resampler_fff(
+                interpolation=int(170e3),
+                decimation=int(quadrature),
+                taps=None,
+                fractional_bw=None,
+        )
         self.rational_resampler_xxx_1 = filter.rational_resampler_fff(
                 interpolation=int(48e3),
                 decimation=int(quadrature),
                 taps=None,
                 fractional_bw=None,
         )
-        self.low_pass_filter_2 = filter.fir_filter_fff(20, firdes.low_pass(
-        	1, quadrature, 3e3, 1e3, firdes.WIN_HAMMING, 6.76))
         self.low_pass_filter_0 = filter.fir_filter_ccf(2, firdes.low_pass(
         	1, samp_rate, cutoff, transition, firdes.WIN_HAMMING, 6.76))
         _echantillon_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -149,13 +191,7 @@ class ExtractionRDSWX(grc_wxgui.top_block_gui):
         	proportion=1,
         )
         self.Add(_echantillon_sizer)
-        self.blocks_multiply_xx_1 = blocks.multiply_vff(1)
-        self.blocks_multiply_xx_0 = blocks.multiply_vff(1)
         self.blocks_multiply_const_vxx_0 = blocks.multiply_const_vff((volume, ))
-        self.band_pass_filter_3 = filter.fir_filter_fff(1, firdes.band_pass(
-        	1, quadrature, 18.5e3, 19.5e3, 1000, firdes.WIN_HAMMING, 6.76))
-        self.band_pass_filter_2 = filter.fir_filter_fff(1, firdes.band_pass(
-        	1, quadrature, 54e3, 60e3, 3e3, firdes.WIN_HAMMING, 6.76))
         self.audio_sink_0 = audio.sink(48000, "", True)
         self.analog_wfm_rcv_0 = analog.wfm_rcv(
         	quad_rate=quadrature,
@@ -169,16 +205,11 @@ class ExtractionRDSWX(grc_wxgui.top_block_gui):
         self.connect((self.rtlsdr_source_0, 0), (self.low_pass_filter_0, 0))
         self.connect((self.analog_wfm_rcv_0, 0), (self.rational_resampler_xxx_1, 0))
         self.connect((self.rational_resampler_xxx_1, 0), (self.blocks_multiply_const_vxx_0, 0))
-        self.connect((self.analog_wfm_rcv_0, 0), (self.band_pass_filter_2, 0))
-        self.connect((self.analog_wfm_rcv_0, 0), (self.band_pass_filter_3, 0))
+        self.connect((self.analog_wfm_rcv_0, 0), (self.rational_resampler_xxx_2, 0))
+        self.connect((self.rational_resampler_xxx_2, 0), (self.wxgui_waterfallsink2_0, 0))
         self.connect((self.low_pass_filter_0, 0), (self.analog_wfm_rcv_0, 0))
-        self.connect((self.low_pass_filter_2, 0), (self.wxgui_scopesink2_2, 0))
-        self.connect((self.band_pass_filter_2, 0), (self.blocks_multiply_xx_0, 0))
-        self.connect((self.band_pass_filter_3, 0), (self.blocks_multiply_xx_1, 0))
-        self.connect((self.band_pass_filter_3, 0), (self.blocks_multiply_xx_1, 1))
-        self.connect((self.band_pass_filter_3, 0), (self.blocks_multiply_xx_1, 2))
-        self.connect((self.blocks_multiply_xx_1, 0), (self.blocks_multiply_xx_0, 1))
-        self.connect((self.blocks_multiply_xx_0, 0), (self.low_pass_filter_2, 0))
+        self.connect((self.blocks_multiply_const_vxx_0, 0), (self.wxgui_scopesink2_0, 0))
+        self.connect((self.rational_resampler_xxx_1, 0), (self.wxgui_fftsink2_0, 0))
 
 
 
@@ -205,15 +236,13 @@ class ExtractionRDSWX(grc_wxgui.top_block_gui):
         self.samp_rate = samp_rate
         self.rtlsdr_source_0.set_sample_rate(self.samp_rate)
         self.low_pass_filter_0.set_taps(firdes.low_pass(1, self.samp_rate, self.cutoff, self.transition, firdes.WIN_HAMMING, 6.76))
+        self.wxgui_fftsink2_0.set_sample_rate(self.samp_rate)
 
     def get_quadrature(self):
         return self.quadrature
 
     def set_quadrature(self, quadrature):
         self.quadrature = quadrature
-        self.band_pass_filter_2.set_taps(firdes.band_pass(1, self.quadrature, 54e3, 60e3, 3e3, firdes.WIN_HAMMING, 6.76))
-        self.low_pass_filter_2.set_taps(firdes.low_pass(1, self.quadrature, 3e3, 1e3, firdes.WIN_HAMMING, 6.76))
-        self.band_pass_filter_3.set_taps(firdes.band_pass(1, self.quadrature, 18.5e3, 19.5e3, 1000, firdes.WIN_HAMMING, 6.76))
 
     def get_frequency(self):
         return self.frequency
